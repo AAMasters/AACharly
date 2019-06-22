@@ -1,4 +1,4 @@
-﻿exports.newUserBot = function newUserBot(bot, logger, COMMONS, UTILITIES, BLOB_STORAGE, STATUS_REPORT, EXCHANGE_API) {
+﻿exports.newUserBot = function newUserBot(bot, logger, COMMONS, UTILITIES, fileStorage, STATUS_REPORT, EXCHANGE_API) {
 
     const FULL_LOG = true;
     const LOG_FILE_CONTENT = false;
@@ -14,8 +14,6 @@
         initialize: initialize,
         start: start
     };
-
-    let charlyStorage = BLOB_STORAGE.newBlobStorage(bot, logger);
 
     let utilities = UTILITIES.newCloudUtilities(bot, logger);
 
@@ -34,20 +32,7 @@
 
             statusDependencies = pStatusDependencies;
 
-            charlyStorage.initialize(bot.devTeam, onCharlyInizialized);
-
-            function onCharlyInizialized(err) {
-
-                if (err.result === global.DEFAULT_OK_RESPONSE.result) {
-
-                    if (FULL_LOG === true) { logger.write(MODULE_NAME, "[INFO] initialize -> onCharlyInizialized -> Initialization Succeed."); }
-                    callBackFunction(global.DEFAULT_OK_RESPONSE);
-
-                } else {
-                    logger.write(MODULE_NAME, "[ERROR] initialize -> onCharlyInizialized -> err = " + err.message);
-                    callBackFunction(err);
-                }
-            }
+            callBackFunction(global.DEFAULT_OK_RESPONSE);
 
         } catch (err) {
             logger.write(MODULE_NAME, "[ERROR] initialize -> err = " + err.message);
@@ -56,28 +41,28 @@
     }
 
     /*
-    
+
     We are going to generate 2 files:
-    
+
     A. The first one will contain all the trades of the current minute and will be store in a folder that we will create for this if it does not exist.
     This file will be incomplete, since we are at the current minute and some trades will happen after we retrieve the information from the exchange,
     but this is not a problem, since the second file is going to fix this. This file is only usefull for viewing a partial candle as it is being built
     at the head of the market.
-    
+
     B. The second file will contain all the trades of the previous minute. This will override the incomplete file written a minute before.
-    
+
     FILE FORMAT
     -----------
-    
+
     Array of records with this information:
-    
+
     1. Trade Id provided by the exchange.
     2. Trade Type: "buy" or "sell"
     3. Trade Rate: the rate of the transaction.
     4. Amount Asset A
     5. Amount Asset B
     6. Time: Seconds and Milliseconds the trade happened. (the rest of the time and date whoever reads the file already know it since it is organized in folders according to this.)
-    
+
     */
 
     function start(callBackFunction) {
@@ -160,6 +145,19 @@
 
                     if (FULL_LOG === true) { logger.write(MODULE_NAME, "[INFO] start -> onExchangeCallReturned -> Entering function."); }
 
+                    if (err.result !== global.DEFAULT_OK_RESPONSE.result) {
+                        logger.write(MODULE_NAME, "[WARN] start -> tradesReadyToBeSaved -> Somethinig is wrong with the Exchange Response. ");
+                        logger.write(MODULE_NAME, "[WARN] start -> tradesReadyToBeSaved -> err.message = " + err.message);
+                        callBackFunction(global.DEFAULT_RETRY_RESPONSE);
+                        return;
+                    }
+
+                    if (exchangeResponse === undefined) {
+                        logger.write(MODULE_NAME, "[WARN] start -> tradesReadyToBeSaved -> exchangeResponse is UNDEFINED. ");
+                        callBackFunction(global.DEFAULT_RETRY_RESPONSE);
+                        return;
+                    }
+
                     if (FULL_LOG === true) {
 
                         let exchangeResponseTime = new Date();
@@ -200,7 +198,7 @@
 
                     for (i = 0; i < exchangeResponse.length; i++) {
 
-                        let record = exchangeResponse[exchangeResponse.length - 1 - i]; // In Poloniex the order of the records is by date DESC so we change it to ASC
+                        let record = exchangeResponse[exchangeResponse.length - 1 - i]; // We expect the exchange API to return the records ordered by ID DESC so we change it to ASC
 
                         const trade = {
                             tradeIdAtExchange: record.tradeID,
@@ -233,7 +231,7 @@
 
                     fileContent = fileContent + ']';
 
-                    charlyStorage.createTextFile(filePathA, fileNameA, fileContent + '\n', onFirstFileACreated);
+                    fileStorage.createTextFile(bot.devTeam, filePathA +'/'+ fileNameA, fileContent + '\n', onFirstFileACreated);
 
                     function onFirstFileACreated(err) {
 
@@ -267,7 +265,7 @@
 
                         for (i = 0; i < exchangeResponse.length; i++) {
 
-                            let record = exchangeResponse[exchangeResponse.length - 1 - i]; // In Poloniex the order of the records is by date DESC so we change it to ASC
+                            let record = exchangeResponse[exchangeResponse.length - 1 - i]; // We expect the exchange API to return the records ordered by ID DESC so we change it to ASC
 
                             const trade = {
                                 tradeIdAtExchange: record.tradeID,
@@ -300,7 +298,7 @@
 
                         fileContent = fileContent + ']';
 
-                        charlyStorage.createTextFile(filePathB, fileNameB, fileContent + '\n', onFileBCreated);
+                        fileStorage.createTextFile(bot.devTeam, filePathB + '/' + fileNameB, fileContent + '\n', onFileBCreated);
 
                         function onFileBCreated(err) {
 
