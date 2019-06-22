@@ -735,8 +735,9 @@
                                     }
 
                                     if (
-                                        err.result === global.CUSTOM_FAIL_RESPONSE.result &&
-                                        (err.message === 'Folder does not exist.' || err.message === 'File does not exist.')
+                                        (err.result === global.CUSTOM_FAIL_RESPONSE.result &&
+                                        (err.message === 'Folder does not exist.' || err.message === 'File does not exist.')) ||
+                                        err.code === 'The specified key does not exist.'
                                     ) {
                                         logger.write(MODULE_NAME, "[INFO] start -> findNextHole -> findEndOfHole -> onNextFileReceived -> err = " + err.message);
 
