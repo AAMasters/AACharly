@@ -1,4 +1,4 @@
-﻿exports.newInterval = function newInterval(bot, logger, UTILITIES, FILE_STORAGE, MARKETS_MODULE, POLONIEX_CLIENT_MODULE) {
+﻿exports.newInterval = function newInterval(bot, logger, UTILITIES, fileStorage, POLONIEX_CLIENT_MODULE) {
 
     const ROOT_DIR = './';
     const GMT_SECONDS = ':00.000 GMT+0000';
@@ -12,7 +12,7 @@
     const TRADES_FOLDER_NAME = "Trades";
 
     const GO_RANDOM = false;
-    const FORCE_MARKET = 2;     // This allows to debug the execution of an specific market. Not intended for production. 
+    const FORCE_MARKET = 2;     // This allows to debug the execution of an specific market. Not intended for production.
 
     interval = {
         initialize: initialize,
@@ -20,8 +20,6 @@
     };
 
     let markets;
-
-    let charlyStorage = FILE_STORAGE.newFileStorage(bot, logger);
 
     let utilities = UTILITIES.newCloudUtilities(bot, logger);
 
@@ -42,13 +40,9 @@
             logger.fileName = MODULE_NAME + "-" + year + "-" + month;
 
             const logText = "[INFO] initialize - Entering function 'initialize' " + " @ " + year + "-" + month;
-            console.log(logText);
             logger.write(logText);
 
-            charlyStorage.initialize(bot.devTeam);
-
-            markets = MARKETS_MODULE.newMarkets(bot.logger);
-            markets.initialize(callBackFunction);
+            callBackFunction(global.DEFAULT_OK_RESPONSE);
 
 
         } catch (err) {
@@ -114,10 +108,10 @@ This process complements the Live Trades process and write historical trades fil
 
             const FIRST_RECORD_ID = 100; // This should be around 100.
 
-            marketsLoop(); 
+            marketsLoop();
 
             /*
-    
+
             At every run, the process needs to loop through all the markets at this exchange.
             The problem is that we can not fire all the requests at once to the exchange or we would get banned.
             For that reason we create a queue with the markets to process and we do one at the time.
@@ -270,8 +264,9 @@ This process complements the Live Trades process and write historical trades fil
 
                     let reportFilePath = global.EXCHANGE_NAME + "/Processes/" + bot.process;
                     let fileName = "Status.Report." + market.assetA + '_' + market.assetB + ".json";
+                    reportFilePath += '/' + fileName
 
-                    charlyStorage.getTextFile(reportFilePath, fileName, onFileReceived, true);
+                    fileStorage.getTextFile(bot.devTeam, reportFilePath, onFileReceived);
 
                     function onFileReceived(text) {
 
@@ -326,8 +321,9 @@ This process complements the Live Trades process and write historical trades fil
 
                     let reportFilePath = global.EXCHANGE_NAME + "/Processes/" + bot.process + "/" + year + "/" + month;
                     let fileName = "Status.Report." + market.assetA + '_' + market.assetB + ".json";
+                    reportFilePath += '/' + fileName
 
-                    charlyStorage.getTextFile(reportFilePath, fileName, onFileReceived, true);
+                    fileStorage.getTextFile(bot.devTeam, reportFilePath, onFileReceived, true);
 
                     function onFileReceived(text) {
 
@@ -360,7 +356,7 @@ This process complements the Live Trades process and write historical trades fil
 
                                 /* We get from the file the datetime of the last file created. */
 
-                                currentDate = new Date(statusReport.lastFile.year + "-" + statusReport.lastFile.month + "-" + statusReport.lastFile.days + " " + statusReport.lastFile.hours + ":" + statusReport.lastFile.minutes + GMT_SECONDS); 
+                                currentDate = new Date(statusReport.lastFile.year + "-" + statusReport.lastFile.month + "-" + statusReport.lastFile.days + " " + statusReport.lastFile.hours + ":" + statusReport.lastFile.minutes + GMT_SECONDS);
 
                                 getTheTrades();
 
@@ -541,9 +537,9 @@ This process complements the Live Trades process and write historical trades fil
 
                     let fileContent = "";
 
-                    let beginingOfMarket = false; // This flag is turned on when we detect the conditions that makes us assume we are at the begining of the hitory of the market. 
+                    let beginingOfMarket = false; // This flag is turned on when we detect the conditions that makes us assume we are at the begining of the hitory of the market.
 
-                    let currentProcessMinute = Math.trunc(currentDate.valueOf() / 1000 / 60); 
+                    let currentProcessMinute = Math.trunc(currentDate.valueOf() / 1000 / 60);
                     let firstProcessMinute = currentProcessMinute;
 
                     /* We will iterate through all the records received from the exchange. We expect the exchange API to return the records ordered by ID DESC so we change it to ASC. So this is going to be going back in time as we advance. */
@@ -581,7 +577,7 @@ This process complements the Live Trades process and write historical trades fil
 
                         if (currentRecordMinute < currentProcessMinute) {
 
-                            /* 
+                            /*
 
                             The information is older that the current time.
                             We must store the current info and reset the pointer to the current time to match the one on the information currently being processd.
@@ -620,7 +616,7 @@ This process complements the Live Trades process and write historical trades fil
 
                     if (fileContent !== "") {
 
-                        /* 
+                        /*
 
                         Normally, we would not save the content of the last file, since it usually contains some of the records of that minute.
                         There are a few exceptions:
@@ -641,7 +637,7 @@ This process complements the Live Trades process and write historical trades fil
 
                         } else {
 
-                            /* 
+                            /*
 
                             The second exception happens when we approach the begining of the month.
                             In markets with few volume, there might be a lot of minutes or even hours, close to the begining of the month with no records. Naturally the process
@@ -719,28 +715,24 @@ This process complements the Live Trades process and write historical trades fil
                         dateForPath = date.getUTCFullYear() + '/' + utilities.pad(date.getUTCMonth() + 1, 2) + '/' + utilities.pad(date.getUTCDate(), 2) + '/' + utilities.pad(date.getUTCHours(), 2) + '/' + utilities.pad(date.getUTCMinutes(), 2);
 
                         filePath = global.EXCHANGE_NAME + "/Output/" + TRADES_FOLDER_NAME + '/' + dateForPath;
+                        filePath += '/' + fileName
 
-                        utilities.createFolderIfNeeded(filePath, charlyStorage, onFolderCreated);
+                        fileStorage.createTextFile(bot.devTeam, filePath, fileContent + '\n', onFileCreated);
 
-                        function onFolderCreated() {
+                        function onFileCreated() {
 
-                            charlyStorage.createTextFile(filePath, fileName, fileContent + '\n', onFileCreated);
+                            let paddedCounter = utilities.pad(fileRecordCounter, 4);
+                            let paddedFile = utilities.pad(i + 1, 5);
 
-                            function onFileCreated() {
+                            const logText = "[WARN] Finished with File # " + paddedFile + " @ " + market.assetA + "_" + market.assetB + ", " + paddedCounter + " records inserted into " + filePath + "/" + fileName + "";
+                            console.log(logText);
+                            logger.write(logText);
 
-                                let paddedCounter = utilities.pad(fileRecordCounter, 4);
-                                let paddedFile = utilities.pad(i + 1, 5);
-
-                                const logText = "[WARN] Finished with File # " + paddedFile + " @ " + market.assetA + "_" + market.assetB + ", " + paddedCounter + " records inserted into " + filePath + "/" + fileName + "";
-                                console.log(logText);
-                                logger.write(logText);
-
-                                controlLoop();
-                            }
+                            controlLoop();
                         }
                     }
 
-                    
+
                     function controlLoop() {
 
                         i++;
@@ -830,7 +822,7 @@ This process complements the Live Trades process and write historical trades fil
 
                 The first thing to do is to read the current report file content, if it exists.
 
-                In this particular process, we will record the last file processed. 
+                In this particular process, we will record the last file processed.
 
                 */
 
@@ -841,83 +833,69 @@ This process complements the Live Trades process and write historical trades fil
                     }
 
                     let reportFilePath = global.EXCHANGE_NAME + "/Processes/" + bot.process + "/" + year + "/" + month;
+                    let fileName = "Status.Report." + market.assetA + '_' + market.assetB + ".json";
 
-                    utilities.createFolderIfNeeded(reportFilePath, charlyStorage, onFolderCreated);
+                    let report = {
+                        lastFile: {
+                            year: lastFileDate.getUTCFullYear(),
+                            month: (lastFileDate.getUTCMonth() + 1),
+                            days: lastFileDate.getUTCDate(),
+                            hours: lastFileDate.getUTCHours(),
+                            minutes: lastFileDate.getUTCMinutes()
+                        },
+                        completeHistory: isMonthComplete
+                    };
 
-                    function onFolderCreated() {
+                    let fileContent = JSON.stringify(report);
 
-                        let fileName = "Status.Report." + market.assetA + '_' + market.assetB + ".json";
+                    reportFilePath += '/' + fileName
+                    fileStorage.createTextFile(bot.devTeam, reportFilePath, fileContent + '\n', onFileCreated);
 
-                        let report = {
-                            lastFile: {
-                                year: lastFileDate.getUTCFullYear(),
-                                month: (lastFileDate.getUTCMonth() + 1),
-                                days: lastFileDate.getUTCDate(),
-                                hours: lastFileDate.getUTCHours(),
-                                minutes: lastFileDate.getUTCMinutes()
-                            },
-                            completeHistory: isMonthComplete
-                        };
+                    function onFileCreated() {
 
-                        let fileContent = JSON.stringify(report); 
+                        if (LOG_INFO === true) {
+                            logger.write(MODULE_NAME, "[INFO] 'writeStatusReport' - Content written: " + fileContent);
+                        }
 
-                        charlyStorage.createTextFile(reportFilePath, fileName, fileContent + '\n', onFileCreated);
+                        if (isBeginingOfMarket === true) {
 
-                        function onFileCreated() {
+                            reportFilePath = global.EXCHANGE_NAME + "/Processes/" + bot.process;
+                            fileName = "Status.Report." + market.assetA + '_' + market.assetB + ".json";
 
-                            if (LOG_INFO === true) {
-                                logger.write(MODULE_NAME, "[INFO] 'writeStatusReport' - Content written: " + fileContent);
-                            }
+                            let report = {
+                                lastFile: {
+                                    year: lastFileDate.getUTCFullYear(),
+                                    month: (lastFileDate.getUTCMonth() + 1),
+                                    days: lastFileDate.getUTCDate(),
+                                    hours: lastFileDate.getUTCHours(),
+                                    minutes: lastFileDate.getUTCMinutes()
+                                },
+                                completeHistory: false // This will be true only when all months are completed.
+                            };
 
-                            if (isBeginingOfMarket === true) {
+                            let fileContent = JSON.stringify(report);
 
-                                reportFilePath = global.EXCHANGE_NAME + "/Processes/" + bot.process;
+                            reportFilePath += '/' + fileName
+                            fileStorage.createTextFile(bot.devTeam, reportFilePath, fileContent + '\n', onMasterFileCreated);
 
-                                utilities.createFolderIfNeeded(reportFilePath, charlyStorage, onFolderCreated);
+                            function onMasterFileCreated() {
 
-                                function onFolderCreated() {
-
-                                    fileName = "Status.Report." + market.assetA + '_' + market.assetB + ".json";
-
-                                    let report = {
-                                        lastFile: {
-                                            year: lastFileDate.getUTCFullYear(),
-                                            month: (lastFileDate.getUTCMonth() + 1),
-                                            days: lastFileDate.getUTCDate(),
-                                            hours: lastFileDate.getUTCHours(),
-                                            minutes: lastFileDate.getUTCMinutes()
-                                        },
-                                        completeHistory: false // This will be true only when all months are completed.
-                                    };
-
-                                    let fileContent = JSON.stringify(report);
-
-                                    charlyStorage.createTextFile(reportFilePath, fileName, fileContent + '\n', onMasterFileCreated);
-
-                                    function onMasterFileCreated() {
-
-                                        if (LOG_INFO === true) {
-                                            logger.write(MODULE_NAME, "[INFO] 'writeStatusReport' - Begining of market reached !!! - Content written: " + fileContent);
-                                        }
-
-                                        verifyMarketComplete(isMonthComplete, callBack);
-
-                                    }
-
+                                if (LOG_INFO === true) {
+                                    logger.write(MODULE_NAME, "[INFO] 'writeStatusReport' - Begining of market reached !!! - Content written: " + fileContent);
                                 }
-
-                            }
-                                
-                            else {
 
                                 verifyMarketComplete(isMonthComplete, callBack);
 
                             }
+                        }
+
+                        else {
+
+                            verifyMarketComplete(isMonthComplete, callBack);
 
                         }
+
                     }
-
-
                 }
                 catch (err) {
                     const logText = "[ERROR] 'writeStatusReport' - ERROR : " + err.message;
@@ -934,7 +912,7 @@ This process complements the Live Trades process and write historical trades fil
                     logger.write(MODULE_NAME, "[INFO] 'writeStatusReport' - verifyMarketComplete - Month Completed !!! ");
 
                     /*
- 
+
                     To know if the whole market is complete, we need to ready all the status reports, one by one, since the first
                     month / year to the current month / year.
 
@@ -945,7 +923,7 @@ This process complements the Live Trades process and write historical trades fil
                     them to report that the month has been completed in order to declare the whole market as completed.
 
                     All of the above is what we call the last step.
- 
+
                     */
 
                     let initialYear;
@@ -956,10 +934,10 @@ This process complements the Live Trades process and write historical trades fil
 
                     let reportFilePath = global.EXCHANGE_NAME + "/Processes/" + bot.process;
                     let fileName = "Status.Report." + market.assetA + '_' + market.assetB + ".json";
-
+                    reportFilePath += '/' + fileName
                     /* Lets read the main status report */
 
-                    charlyStorage.getTextFile(reportFilePath, fileName, onFileReceived, true);
+                    fileStorage.getTextFile(bot.devTeam, reportFilePath, onFileReceived, true);
 
                     function onFileReceived(text) {
 
@@ -994,8 +972,9 @@ This process complements the Live Trades process and write historical trades fil
 
                         let reportFilePath = global.EXCHANGE_NAME + "/Processes/" + bot.process + "/" + initialYear + "/" + paddedInitialMonth;
                         let fileName = "Status.Report." + market.assetA + '_' + market.assetB + ".json";
+                        reportFilePath += '/' + fileName
 
-                        charlyStorage.getTextFile(reportFilePath, fileName, onStatusReportFileReceived, true);
+                        fileStorage.getTextFile(bot.devTeam, reportFilePath, onStatusReportFileReceived, true);
 
                         function onStatusReportFileReceived(text) {
 
@@ -1060,8 +1039,9 @@ This process complements the Live Trades process and write historical trades fil
 
                         let reportFilePath = global.EXCHANGE_NAME + "/Processes/" + bot.process;
                         let fileName = "Status.Report." + market.assetA + '_' + market.assetB + ".json";
+                        reportFilePath += '/' + fileName
 
-                        charlyStorage.getTextFile(reportFilePath, fileName, onFileReceived, true);
+                        fileStorage.getTextFile(bot.devTeam, reportFilePath, onFileReceived, true);
 
                         function onFileReceived(text) {
 
@@ -1071,7 +1051,7 @@ This process complements the Live Trades process and write historical trades fil
 
                             let fileContent = JSON.stringify(statusReport);
 
-                            charlyStorage.createTextFile(reportFilePath, fileName, fileContent + '\n', onMasterFileCreated);
+                            fileStorage.createTextFile(bot.devTeam, reportFilePath, fileContent + '\n', onMasterFileCreated);
 
                             function onMasterFileCreated() {
 
