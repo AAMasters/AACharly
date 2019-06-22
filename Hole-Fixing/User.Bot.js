@@ -446,8 +446,6 @@
 
                             console.log("[INFO] start -> findNextHole -> readNextFile -> reading file at dateForPath = " + dateForPath);
 
-                            console.log("[INFO] start -> findNextHole -> readNextFile -> reading file at dateForPath = " + dateForPath);
-
                             function onNextFileReceived(err, text) {
 
                                 try {
@@ -717,8 +715,6 @@
                             filePath += '/' + fileName
 
                             fileStorage.getTextFile(bot.devTeam, filePath, onNextFileReceived, true);
-
-                            console.log("[INFO] start -> findNextHole -> findEndOfHole -> reading file at dateForPath = " + dateForPath);
 
                             console.log("[INFO] start -> findNextHole -> findEndOfHole -> reading file at dateForPath = " + dateForPath);
 
@@ -1092,8 +1088,6 @@
                             filePath += '/' + fileName
 
                             fileStorage.createTextFile(bot.devTeam, filePath, fileContent + '\n', onFileCreated);
-
-                            console.log("[INFO] start -> tradesReadyToBeSaved -> nextRecord -> creating file at dateForPath = " + dateForPath);
 
                             console.log("[INFO] start -> tradesReadyToBeSaved -> nextRecord -> creating file at dateForPath = " + dateForPath);
 
