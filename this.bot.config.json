@@ -1,6 +1,6 @@
 {
-  "displayName": "Exchange Raw Data",
-  "codeName": "Exchange-Raw-Data",
+  "displayName": "Charly",
+  "codeName": "AACharly",
   "type": "Sensor",
   "version": {
     "major": 1,
@@ -8,6 +8,7 @@
     "patch": 0
   },
   "devTeam": "AAMasters",
+  "profilePicture": "Charly.png",
   "dataSetVersion": "dataSet.V1",
   "processes": [
     {
@@ -39,7 +40,7 @@
       "statusDependencies": [
         {
           "devTeam": "AAMasters",
-          "bot": "Exchange-Raw-Data",
+          "bot": "AACharly",
           "botVersion": {
             "major": 1,
             "minor": 0
@@ -78,7 +79,7 @@
       "statusDependencies": [
         {
           "devTeam": "AAMasters",
-          "bot": "Exchange-Raw-Data",
+          "bot": "AACharly",
           "botVersion": {
             "major": 1,
             "minor": 0
@@ -88,7 +89,7 @@
         },
         {
           "devTeam": "AAMasters",
-          "bot": "Exchange-Raw-Data",
+          "bot": "AACharly",
           "botVersion": {
             "major": 1,
             "minor": 0
@@ -127,7 +128,7 @@
       "statusDependencies": [
         {
           "devTeam": "AAMasters",
-          "bot": "Exchange-Raw-Data",
+          "bot": "AACharly",
           "botVersion": {
             "major": 1,
             "minor": 0
@@ -137,7 +138,7 @@
         },
         {
           "devTeam": "AAMasters",
-          "bot": "Exchange-Raw-Data",
+          "bot": "AACharly",
           "botVersion": {
             "major": 1,
             "minor": 0
@@ -147,7 +148,7 @@
         },
         {
           "devTeam": "AAMasters",
-          "bot": "Exchange-Raw-Data",
+          "bot": "AACharly",
           "botVersion": {
             "major": 1,
             "minor": 0
@@ -158,7 +159,7 @@
         },
         {
           "devTeam": "AAMasters",
-          "bot": "Exchange-Raw-Data",
+          "bot": "AACharly",
           "botVersion": {
             "major": 1,
             "minor": 0
